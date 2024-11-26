@@ -6,7 +6,7 @@ export default [{
 		file: 'url.cjs',
 		format: 'cjs',
 	}, {
-		file: 'url.mjs',
+		file: 'url.min.js',
 		format: 'esm',
 		sourcemap: true,
 		plugins: [terser()],

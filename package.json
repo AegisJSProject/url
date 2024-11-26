@@ -1,6 +1,6 @@
 {
   "name": "@aegisjsproject/url",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Safe URL parsing/escaping via JS tagged templates",
   "keywords": [
     "aegis",
@@ -11,7 +11,7 @@
   "type": "module",
   "main": "./url.cjs",
   "module": "./url.js",
-  "unpkg": "./url.mjs",
+  "unpkg": "./url.min.js",
   "exports": {
     ".": {
       "import": "./url.js",
@@ -46,7 +46,7 @@
     "fix:js": "eslint . --fix",
     "build": "npm run build:js",
     "run:tests": "node --test",
-    "clean": "rm -f *.{mjs,cjs,map}",
+    "clean": "rm -f *.{mjs,cjs,map} && rm -f *.min.*",
     "build:js": "npm run clean && rollup -c rollup.config.js",
     "create:lock": "npm i --package-lock-only --ignore-scripts --no-audit --no-fund",
     "version:bump": "npm run version:bump:patch",
