@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.1] - 2024-11-25
+
+### Added
+- Add `SearchParam` class, `getSearch` and `manageSearch` functions
+- Add `createURLParser` to support URL parsers with custom bases
+
 ## [v1.0.0] - 2024-10-28
 
 Initial Release
