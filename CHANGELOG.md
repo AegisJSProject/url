@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.2] - 2025-01-25
+
+### Added
+- Add `SearchParamChangeEvent` class extending `CustomEvent`
+- Add `multiple` support for `SearchParam`
+- `manageSearch` now uses `Proxy` to expose underlying properties and methods of values
+
+### Changed
+- Use calceleable `beforechange` event followed by a `change` event after
+
 ## [v1.0.1] - 2024-11-25
 
 ### Added

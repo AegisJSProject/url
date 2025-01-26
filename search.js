@@ -1,4 +1,5 @@
 import { SearchParam } from './SearchParam.js';
+import { SearchParamChangeEvent } from './event.js';
 
 /**
  * Factory function for `SearchParam`
@@ -12,42 +13,106 @@ import { SearchParam } from './SearchParam.js';
  * @param {boolean} [once=false] A boolean value that, if true, indicates that the function specified by listener will never call `preventDefault()`.
  * @returns {SearchParam} An instance of a `SearchParam` object, dispatching a `change` event when changed
  */
-export function getSearch(key, fallbackValue, onChange, { signal, passive = false, once = false } = {}) {
+export function getSearch(key, fallbackValue, {
+	onChange,
+	onBeforeChange,
+	multiple = false,
+	signal,
+	passive = false,
+	once = false,
+} = {}) {
+	const param = new SearchParam(key, fallbackValue, { multiple });
+
 	if (onChange instanceof Function) {
-		const param = new SearchParam(key, fallbackValue);
 		param.addEventListener('change', onChange, { signal, passive, once });
-		return param;
-	} else {
-		return new SearchParam(key, fallbackValue);
 	}
+
+	if (onBeforeChange instanceof Function) {
+		param.addEventListener('beforechange', onBeforeChange, { signal, passive, once });
+	}
+	return param;
 }
 
 /**
- * Manages a specified URL search parameter as a live-updating stateful value.
+ * Manages search parameters in the URL with custom behavior for changes and updates.
  *
- * @param {string} key - The name of the URL search parameter to manage.
- * @param {string|number} [fallbackValue=''] - The initial/fallback value if the search parameter is not set.
- * @returns {[SearchParam, function(string|number): void]} - Returns a two-element array:
- * - Returns a two-element array:
- *   - The first element is an object with:
- *     - A `toString` method, returning the current value of the URL parameter as a string.
- *     - A `[Symbol.toPrimitive]` method, allowing automatic conversion of the value based on the context (e.g., string or number).
- *   - The second element is a setter function that updates the URL search parameter to a new value, reflected immediately in the URL without reloading the page.
+ * @param {string} key - The name of the search parameter to manage.
+ * @param {string|Array} [fallbackValue=''] - The default value to use if the parameter is not present.
+ * @param {Object} [options={}] - Optional configuration for managing the search parameter.
+ * @param {function(SearchParamChangeEvent)} [options.onChange] - Callback invoked when the search parameter value changes.
+ * @param {function(SearchParamChangeEvent)} [options.onBeforeChange] - Callback invoked before the search parameter value changes.
+ * @param {boolean} [options.multiple=false] - Whether the parameter supports multiple values.
+ * @param {AbortSignal} [options.signal] - An AbortSignal to cancel ongoing operations.
+ * @param {boolean} [options.passive] - If true, changes to the parameter are not actively managed.
+ * @param {boolean} [options.once] - If true, the parameter management is only performed once.
+ * @returns {[Proxy<string | string[]>, function(newValue: *, options?: { method?: 'replace' | 'push', cause?: * }): void]} - An array containing two elements:
+ *   - A `Proxy` object that interacts with the search parameter's value.
+ *   - A function to update the search parameter, accepting a new value and options.
+ *     - @param {*} newValue - The new value to set for the search parameter.
+ *     - @param {Object} [updateOptions={}] - Options for the update operation.
+ *       - @param {'replace'|'push'} [updateOptions.method='replace'] - How to update the browser history.
+ *       - @param {*} [updateOptions.cause=null] - Additional context or reason for the update.
+ * @throws {TypeError} - Throws if an invalid update method is provided.
  */
-export function manageSearch(key, fallbackValue = '', onChange, { signal, passive, once } = {}) {
-	const param = getSearch(key, fallbackValue, onChange, { once, passive, signal });
+export function manageSearch(key, fallbackValue = '', {
+	onChange,
+	onBeforeChange,
+	multiple = false,
+	signal,
+	passive,
+	once,
+} = {}) {
+	const param = getSearch(key, fallbackValue, { onChange, onBeforeChange, multiple, once, passive, signal });
 
 	return [
-		param,
+		new Proxy(param, {
+			get(target, prop) {
+				if (prop === 'addEventListener') {
+					return target.addEventListener.bind(target);
+				} else {
+					const val = target[SearchParam.valueSymbol];
+
+					if (typeof val === 'string') {
+						return val[prop] instanceof Function ? val[prop].bind(val) : val[prop];
+					} else {
+						return Reflect.get(target[SearchParam.valueSymbol], prop, target[SearchParam.valueSymbol]);
+					}
+				}
+			},
+			has(target, prop) {
+				return Reflect.has(target[SearchParam.valueSymbol], prop);
+			},
+			ownKeys(target) {
+				return Reflect.ownKeys(target[SearchParam.valueSymbol]);
+			},
+			isExtensible(target) {
+				return Reflect.isExtensible(target);
+			},
+			preventExtensions(target) {
+				return Reflect.preventExtensions(target);
+			},
+			getOwnPropertyDescriptor(target, prop) {
+				return Reflect.getOwnPropertyDescriptor(target[SearchParam.valueSymbol], prop);
+			}
+		}),
 		(newValue, { method = 'replace', cause = null } = {}) => {
 			const url = new URL(globalThis?.location?.href);
-			const oldValue = url.searchParams.get(key);
-			url.searchParams.set(key, newValue);
+			const oldValue = url.searchParams.get(key) ?? fallbackValue;
 
-			const event = new CustomEvent('change', {
-				cancelable: true,
-				detail: { name: key, newValue, oldValue, method, url, cause },
-			});
+			if (multiple && typeof newValue === 'object' && newValue[Symbol.iterator] instanceof Function) {
+				url.searchParams.delete(key);
+
+				for (const val of newValue) {
+					url.searchParams.append(key, val);
+				}
+			} else if (typeof newValue === 'undefined') {
+				url.searchParams.delete(key);
+			} else {
+				url.searchParams.set(key, newValue);
+			}
+
+			const detail = Object.freeze({ name: key, newValue, oldValue, method, url, cause });
+			const event = new SearchParamChangeEvent('beforechange', { cancelable: true, detail });
 
 			param.dispatchEvent(event);
 
@@ -55,8 +120,12 @@ export function manageSearch(key, fallbackValue = '', onChange, { signal, passiv
 				return;
 			} else if (method === 'replace') {
 				history.replaceState(history.state, '', url.href);
+
+				param.dispatchEvent(new SearchParamChangeEvent('change', { cancelable: false, detail }));
 			} else if (method === 'push') {
 				history.pushState(history.state, '', url.href);
+
+				param.dispatchEvent(new SearchParamChangeEvent('change', { cancelable: false, detail }));
 			} else {
 				throw new TypeError(`Invalid update method: ${method}.`);
 			}
