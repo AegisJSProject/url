@@ -1,6 +1,6 @@
 {
   "name": "@aegisjsproject/url",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Safe URL parsing/escaping via JS tagged templates",
   "keywords": [
     "aegis",
