@@ -1,3 +1,5 @@
+static/
+api/
 node_modules/
 .github/
 .editorconfig
