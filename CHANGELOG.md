@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.3] - 2025-03-11
+
+### Added
+- Add `setSearch()`
+
+### Changed
+- `getSearch()` can now be proxied to use the methods available on the value
+
 ## [v1.0.2] - 2025-01-25
 
 ### Added
