@@ -1,6 +1,6 @@
 {
   "name": "@aegisjsproject/url",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Safe URL parsing/escaping via JS tagged templates",
   "keywords": [
     "aegis",
@@ -77,10 +77,13 @@
   "homepage": "https://github.com/AegisJSProject/url#readme",
   "devDependencies": {
     "@rollup/plugin-terser": "^1.0.0",
-    "@shgysk8zer0/eslint-config": "^1.0.1",
-    "@shgysk8zer0/http-server": "^1.1.1",
-    "@shgysk8zer0/polyfills": "^0.6.0",
-    "eslint": "^10.0.0",
-    "rollup": "^4.24.2"
+    "@shgysk8zer0/eslint-config": "^1.1.0",
+    "@shgysk8zer0/http-server": "^1.2.0",
+    "@shgysk8zer0/polyfills": "^0.8.4",
+    "eslint": "^10.5.0",
+    "rollup": "^4.62.0"
+  },
+  "allowScripts": {
+    "fsevents@2.3.3": true
   }
 }
